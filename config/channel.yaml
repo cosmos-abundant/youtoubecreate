@@ -1,0 +1,43 @@
+# 채널 아이덴티티 — 에이전트 공통 참조 (thumbnail-meta, upload, scriptwriter 톤 앵커)
+# 변경 시 반드시 이 파일을 갱신한다. 채널명·설명·슬로건의 단일 기준.
+
+channel:
+  name: 역사산책
+  former_name: 메타버스트렌드          # 2026-06 리브랜딩 (기존 영상 전부 비공개 전환)
+  url: https://www.youtube.com/@메타버스트렌드   # 핸들 변경 후 갱신할 것
+  handle_candidates:                    # Studio에서 선점 여부 확인 후 1개 확정 → handle: 로 기록
+    - "@history-sanchaek"
+    - "@yeoksa-sanchaek"
+    - "@historysanchaek"
+  language: ko
+  niche: history                        # 추후 확장: science, space, society
+
+brand:
+  slogan: "천천히, 함께 걷는 역사 이야기"
+  positioning: >
+    기록(실록·사료·공공자료)에 남은 사실만을 바탕으로, 교과서가 미처 들려주지
+    못한 이야기를 차분하게 전하는 전 연령 에버그린 역사 채널.
+    전달 방식은 시니어 친화(또박또박·용어 풀이·회상·존중 톤).
+  description: |
+    천천히, 함께 걷는 역사 이야기 — 역사산책입니다.
+
+    실록과 기록에 남은 사실만을 바탕으로,
+    교과서가 미처 들려주지 못한 이야기를 차분하게 전해 드립니다.
+    어려운 용어는 그때그때 풀어 드리고,
+    이야기의 끝에는 늘 오늘 우리에게 주는 의미를 함께 생각합니다.
+
+    매주 새로운 산책길에서 뵙겠습니다.
+  keywords: [역사, 한국사, 근대사, 조선, 대한제국, 교양, 다큐, 시니어, 어르신, 옛날이야기]
+  banner_concept: >
+    고서·옛 지도 질감의 차분한 배경 + 붓글씨 느낌의 큰 제목 "역사산책" +
+    부제 슬로건. 고대비·큰 글씨(시니어 가독성). 인물 사진 없이 정적인 품격.
+  profile_concept: "한지 질감 원형 배경에 '역사산책' 두 글자 또는 옛 등불 아이콘"
+
+defaults:                               # thumbnail-meta가 meta.json 작성 시 기본값
+  category: education
+  description_footer: |
+    ─────
+    역사산책 | 천천히, 함께 걷는 역사 이야기
+    본 영상은 공개된 기록과 사료에 근거해 제작되었으며, 출처는 더보기란에 표기합니다.
+  upload_schedule: "주 1회 (안정화 후 주 2회)"
+  first_video: deokryulpung-first-telephone   # 리브랜딩 후 1호 발행 예정작

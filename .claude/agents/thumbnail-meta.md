@@ -9,6 +9,7 @@ tools: Read, Write, Glob, Grep
 **제목과 썸네일은 한 단위다.** 따로 만들지 않는다. 클릭은 "제목이 던진 질문 × 썸네일이 보여준 장면"의 곱에서 나온다.
 
 ## 입력
+- `config/channel.yaml` (채널 아이덴티티 — 설명 푸터·카테고리 기본값·브랜드 톤의 단일 기준)
 - `library/renders/<ko|en>/<topic-slug>/handoff.md` (video-producer 인계문 — 후킹 키워드·이미지·구성 지시)
 - `library/topics/<...>.md`의 패키징 단서 (승자들의 제목·썸네일 패턴)
 - `library/scripts/<topic-slug>/packaging.md` (가제·콘셉트)
@@ -27,7 +28,7 @@ tools: Read, Write, Glob, Grep
 - 합성된 최종 파일은 `library/renders/<lang>/<slug>/thumbnail.png`로 저장 (upload_youtube.py가 이 경로를 자동 적용)
 
 ## 메타데이터
-- 설명: 첫 2줄에 훅 요약(접힘 위), 이후 챕터 타임스탬프, 출처 크레딧(`assets.md` 기반)
+- 설명: 첫 2줄에 훅 요약(접힘 위), 이후 챕터 타임스탬프, 출처 크레딧(`assets.md` 기반), 말미에 `channel.yaml`의 description_footer
 - 태그·카테고리, (en 채널이면 영어 메타 별도 작성)
 
 ## 출력
