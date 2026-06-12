@@ -13,6 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 import outlier_score
+import produce_video
 import upload_youtube
 import yt_subtitles
 
@@ -54,6 +55,50 @@ class TestYtSubtitles(unittest.TestCase):
         self.assertEqual(yt_subtitles.slugify("Hello, World! 123"), "hello-world-123")
         self.assertEqual(yt_subtitles.slugify("   "), "untitled")
         self.assertLessEqual(len(yt_subtitles.slugify("a" * 200)), 60)
+
+
+class TestProduceVideo(unittest.TestCase):
+    DRAFT = (
+        "# 제목\n\n"
+        "<!-- scene: 1919년 홍릉, 상복의 황제 -->\n첫 씬 본문입니다.\n\n"
+        "<!-- scene: 다이얼 전화, 교환원 -->\n둘째 씬 본문입니다.\n"
+        "<!-- 일반 주석은 제거 -->\n이어지는 문장.\n"
+    )
+
+    def _write_draft(self, base: Path) -> Path:
+        d = base / "topic-slug"
+        d.mkdir(parents=True)
+        p = d / "draft-v1.md"
+        p.write_text(self.DRAFT, encoding="utf-8")
+        return p
+
+    def test_parse_scenes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            scenes = produce_video.parse_scenes(self._write_draft(Path(tmp)))
+        self.assertEqual(len(scenes), 2)
+        self.assertEqual(scenes[0]["visual_hint"], "1919년 홍릉, 상복의 황제")
+        self.assertEqual(scenes[0]["card_text"], "1919년 홍릉")  # 쉼표 앞 절만
+        self.assertNotIn("일반 주석", scenes[1]["text"])
+        self.assertIn("이어지는 문장.", scenes[1]["text"])
+        self.assertIsNone(scenes[0]["image"])
+
+    def test_merge_preserves_manual_edits_when_text_unchanged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            draft = self._write_draft(Path(tmp))
+            scenes = produce_video.parse_scenes(draft)
+            scenes[0]["image"] = "assets/photo.png"
+            scenes[0]["card_text"] = "수동 문구"
+            scenes_path = Path(tmp) / "scenes.json"
+            scenes_path.write_text(json.dumps({"scenes": scenes}, ensure_ascii=False), encoding="utf-8")
+
+            merged = produce_video.load_or_merge_scenes(draft, scenes_path)
+            self.assertEqual(merged[0]["image"], "assets/photo.png")
+            self.assertEqual(merged[0]["card_text"], "수동 문구")
+
+            # 본문이 바뀐 씬은 수동 필드를 승계하지 않는다 (안전 우선)
+            draft.write_text(self.DRAFT.replace("첫 씬 본문입니다.", "바뀐 본문입니다."), encoding="utf-8")
+            merged2 = produce_video.load_or_merge_scenes(draft, scenes_path)
+            self.assertIsNone(merged2[0]["image"])
 
 
 class TestUploadYoutube(unittest.TestCase):

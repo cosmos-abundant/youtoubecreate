@@ -8,6 +8,9 @@ library/renders/**/*.wav
 library/renders/**/*.mp3
 library/renders/**/*.png
 library/renders/**/*.jpg
+library/renders/**/audio/
+library/renders/**/frames/
+library/renders/**/segments/
 
 # 자막 원시 수집물 (필요 시 재수집 가능)
 sources/_inbox/

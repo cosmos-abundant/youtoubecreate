@@ -43,6 +43,25 @@ python scripts/outlier_score.py
 
 파이프라인 실행은 Claude Code에서 `/produce` (또는 `/produce <topic-slug>`).
 
+## 영상 제작 (로컬 실행 — 결과물은 `library/renders/<lang>/<slug>/`에 저장)
+
+시스템 요구: **ffmpeg** + 한글 폰트(리눅스만 `fonts-nanum` 설치 필요). 이후:
+
+```bash
+# 1. 씬 구성 시안 생성 → scenes.json의 card_text/image 검토·수정
+python scripts/produce_video.py library/scripts/<slug>/draft-v2.md --scenes-only
+
+# 2. TTS(edge-tts, 무료) + 렌더 → final.mp4
+python scripts/produce_video.py library/scripts/<slug>/draft-v2.md
+
+# 3. 썸네일 합성
+python scripts/make_thumbnail.py library/renders/ko/<slug> --text "후킹 문구"
+
+# 4. assets.md에 사용 이미지·BGM 라이선스 전 항목 기입 (발행 게이트)
+```
+
+영상·오디오·썸네일은 용량 문제로 git에 올리지 않는다(scenes.json·assets.md만 추적). 같은 명령으로 언제든 재생성 가능.
+
 ## 업로드 자동화 (Phase 2+)
 
 OAuth 클라이언트(`client_secrets.json`)를 준비하고 채널 계정별(ko/en)로 1회 인증:

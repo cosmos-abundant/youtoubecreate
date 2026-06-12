@@ -12,30 +12,34 @@ tools: Bash, Read, Write, Glob, Grep
 - `library/scripts/<topic-slug>/draft-v<final>.md` (통과본) + `packaging.md`
 - (있으면) `modes/`의 해당 모드 — 모드가 지정한 TTS·BGM·비주얼 설정 우선
 
-## 처리 절차
+## 처리 절차 (결정론 작업은 전부 `scripts/produce_video.py`가 수행 — 직접 구현 금지)
 
-### 1. 씬 분할
-- 대본의 `<!-- scene: -->` 주석 + 의미 단락 기준으로 씬 분할.
-- 씬당 15~40초. 산출: `scenes.json` (씬별 텍스트, 비주얼 지시, 예상 길이).
+### 1. 씬 구성 검토 (LLM 판단)
+```bash
+python scripts/produce_video.py library/scripts/<slug>/draft-v<final>.md --scenes-only
+```
+- 생성된 `scenes.json`을 검토: `card_text`(화면 문구)를 씬 내용에 맞게 다듬고, 라이선스 확인된 이미지가 있으면 `image`에 경로 지정 (없으면 자동 텍스트 카드 사용).
+- 씬당 15~40초 권장 — 90초 초과 씬은 대본의 `<!-- scene: -->` 주석 추가를 scriptwriter에 요청.
 
-### 2. TTS (모드 선택)
-| 모드 | 용도 |
+### 2. TTS·렌더 (코드)
+```bash
+python scripts/produce_video.py <draft> [--tts edge|none] [--voice ...] [--bgm <파일>]
+```
+| 엔진 | 용도 |
 |---|---|
-| 기본 추천 TTS | 표준 (모드 미지정 시 기본값) |
-| 슈퍼톤 | 한국어 고품질 내레이션 |
-| 무료 TTS | 테스트·프로토타입 |
-| ElevenLabs API | 영어 채널 / 프리미엄 |
-- 시니어 친화: 속도 0.9~0.95배, 문장 사이 호흡 0.4~0.6초.
-- 씬별 오디오 파일 + 실측 길이를 `scenes.json`에 기록 (타이밍 싱크의 기준).
+| `edge` (기본) | 무료 한국어 신경망 음성 (ko-KR-InJoonNeural, rate -7% — 시니어 친화 기본값) |
+| `none` | 무음 타이밍 시안 (네트워크 차단 환경·검증용) |
+| 슈퍼톤/ElevenLabs | API 키 확보 후 produce_video.py에 추가 예정 |
+- 씬별 실측 길이는 scenes.json에 자동 기록, 씬 간 0.6초 호흡 자동 삽입.
+- BGM은 라이선스 확인된 트랙만, -18dB 자동 믹스.
 
-### 3. 비주얼·BGM
-- 이미지: 퍼블릭 도메인·CC·구매 라이선스만. 각 이미지의 출처·라이선스를 `assets.md`에 기록 (누락 시 발행 불가).
-- 자막·도표·강조 텍스트는 HTML 템플릿으로 렌더 (시니어 친화: 큰 글씨, 고대비).
-- BGM: 라이선스 확인된 트랙, 내레이션 대비 -18dB 내외.
+### 3. 라이선스 대장 (발행 게이트)
+- 자동 생성된 `assets.md`에 사용 이미지·BGM의 출처·라이선스·확인일을 **전 항목 기입** (미기입 시 발행 불가).
 
-### 4. 조립·싱크
-- TTS 실측 길이에 맞춰 씬 타이밍 싱크 → 렌더.
-- 산출: `library/renders/<ko|en>/<topic-slug>/final.mp4`
+### 4. 썸네일 합성 (thumbnail-meta의 스펙 확정 후)
+```bash
+python scripts/make_thumbnail.py <render_dir> --from-meta   # 또는 --text "..." --image ...
+```
 
 ### 5. 썸네일 컨텍스트 인계 (필수)
 `thumbnail-meta`에게 넘길 `handoff.md` 작성:
@@ -50,8 +54,10 @@ tools: Bash, Read, Write, Glob, Grep
 ## 출력 구조
 ```
 library/renders/<ko|en>/<topic-slug>/
-├── final.mp4
-├── scenes.json      # 씬·타이밍·오디오 매핑
-├── assets.md        # 이미지·BGM 출처/라이선스 대장
-└── handoff.md       # thumbnail-meta 인계문
+├── final.mp4        # (대용량 — git 미추적, 로컬 보관)
+├── scenes.json      # 씬·타이밍·오디오 매핑 (git 추적)
+├── audio/ frames/ segments/   # 중간 산출물 (git 미추적)
+├── assets.md        # 이미지·BGM 출처/라이선스 대장 (git 추적)
+├── thumbnail.png    # make_thumbnail.py 산출 (git 미추적, 로컬 재생성 가능)
+└── handoff.md       # thumbnail-meta 인계문 (git 추적)
 ```

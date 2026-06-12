@@ -1,6 +1,11 @@
 # 결정론적 도구 (scripts/) 의존성
+# 시스템 요구: ffmpeg, 한글 폰트(리눅스: fonts-nanum / macOS·Windows: 기본 내장)
 yt-dlp>=2025.1.1
 PyYAML>=6.0
+
+# 영상 제작 (produce_video.py, make_thumbnail.py)
+Pillow>=10.0
+edge-tts>=7.0
 
 # 업로드 (upload_youtube.py)
 google-api-python-client>=2.100.0
