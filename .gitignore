@@ -12,6 +12,9 @@ library/renders/**/*.jpg
 # 자막 원시 수집물 (필요 시 재수집 가능)
 sources/_inbox/
 
+# cron 로그
+logs/
+
 # Python
 __pycache__/
 *.pyc

@@ -36,10 +36,7 @@ tools: Bash, Read, Write, Glob, Grep, Agent
 
 ## 개선 루프 (Phase 4)
 
-발행 7일/30일 후 성과 데이터(조회수·CTR·평균시청지속)를 회수해:
-1. `modes/<mode>.yaml`의 `performance:` 섹션에 기록
-2. 가설 수립 (예: "CTR 낮음 → 썸네일 텍스트 과다") → 모드 업데이트 또는 패키징 A/B
-3. 성과 좋은 모드를 신규 생산의 기본값으로 승격
+발행 7일/30일 후 `mode-improver` 서브에이전트를 호출한다 (`scripts/fetch_analytics.py`로 데이터 회수 → 진단 → 모드 업데이트 → 승격/폐기 제안). 상세 절차는 mode-improver 정의를 따른다.
 
 ```
 1개 완성 → 모드화 → 반복 테스트로 고품질 모드 N개 → 신규 생산 적용 → 성과 학습 → 모드 개선 ↺

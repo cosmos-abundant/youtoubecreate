@@ -18,9 +18,10 @@ topic-scout → researcher → scriptwriter ⇄ script-critic → video-producer
 
 | 경로 | 역할 |
 |---|---|
-| `.claude/agents/` | 서브에이전트 8종 (topic-scout, researcher, scriptwriter, script-critic, video-producer, thumbnail-meta, orchestrator, book-to-scripts) |
+| `.claude/agents/` | 서브에이전트 9종 (topic-scout, researcher, scriptwriter, script-critic, video-producer, thumbnail-meta, orchestrator, book-to-scripts, mode-improver) |
 | `.claude/skills/` | 서적 전략 코드화 스킬 4종 (made-to-stick, influence-cialdini, hook-retention, senior-friendly) |
-| `scripts/` | 결정론적 도구 — `yt_subtitles.py`, `outlier_score.py`, `upload_youtube.py` |
+| `.claude/commands/` | `/produce` — 파이프라인 1회 실행 진입점 |
+| `scripts/` | 결정론적 도구 — `yt_subtitles.py`, `outlier_score.py`, `upload_youtube.py`, `fetch_analytics.py`, `upload_cron.sh` |
 | `config/` | `seed-channels.yaml` (인간 큐레이션 시드), `glossary.md` (용어집) |
 | `sources/` | 출처 태그가 달린 사실 리소스 풀 |
 | `modes/` | 검증된 모드 스냅샷 — **자본재의 핵심** |
@@ -39,11 +40,37 @@ python scripts/outlier_score.py
 # 4. (Phase 1은 영상화·업로드 수동) 발행 후 첫 모드를 modes/에 저장
 ```
 
-업로드 자동화(Phase 2+)는 OAuth 클라이언트(`client_secrets.json`) 준비 후:
+파이프라인 실행은 Claude Code에서 `/produce` (또는 `/produce <topic-slug>`).
+
+## 업로드 자동화 (Phase 2+)
+
+OAuth 클라이언트(`client_secrets.json`)를 준비하고 채널 계정별(ko/en)로 1회 인증:
 
 ```bash
-python scripts/upload_youtube.py library/renders/ko/<slug> --dry-run
-python scripts/upload_youtube.py --watch library/renders/ko --max 1   # cron 등록용
+python scripts/upload_youtube.py library/renders/ko/<slug> --dry-run   # 검증
+python scripts/upload_youtube.py library/renders/ko/<slug>            # 단일 업로드 (기본 private)
+./scripts/upload_cron.sh ko                                            # 미발행분 1개 업로드
+
+# crontab 등록 (한/영 채널 시차 발행)
+# 0 9  * * *  cd /path/to/repo && ./scripts/upload_cron.sh ko >> logs/upload.log 2>&1
+# 0 21 * * *  cd /path/to/repo && ./scripts/upload_cron.sh en >> logs/upload.log 2>&1
+```
+
+렌더 폴더에 `thumbnail.png`가 있으면 자동 적용되고, 결과는 `library/published.json`에 기록된다.
+
+## 개선 루프 (Phase 4)
+
+```bash
+python scripts/fetch_analytics.py --days 7    # 성과 데이터 회수 → library/analytics/
+# Claude Code: "mode-improver로 이번 주 성과를 진단하고 모드를 업데이트해줘"
+```
+
+CTR·노출수는 Analytics API가 제공하지 않으므로 YouTube Studio에서 확인해 수동 보충한다.
+
+## 테스트
+
+```bash
+python3 -m unittest discover tests -v
 ```
 
 ## 빌드 로드맵

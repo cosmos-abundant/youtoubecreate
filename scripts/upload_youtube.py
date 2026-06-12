@@ -9,9 +9,12 @@ library/renders/<ko|en>/<slug>/ 디렉터리에서 final.mp4 + meta.json 을 읽
     python scripts/upload_youtube.py --watch library/renders/ko --max 1   # cron용: 미발행분 중 1개 업로드
     python scripts/upload_youtube.py <render_dir> --dry-run  # 검증만
 
-인증:
-    client_secrets.json (OAuth 클라이언트) + 최초 1회 브라우저 인증 → .credentials/token.json 캐시
-    환경변수 YT_CLIENT_SECRETS 로 경로 재정의 가능.
+인증 (한/영 채널 분리):
+    client_secrets.json (OAuth 클라이언트) + 채널 계정별 최초 1회 브라우저 인증
+    → .credentials/token-<lang>.json 캐시 (meta.json의 language가 어느 채널 토큰을 쓸지 결정)
+    환경변수 YT_CLIENT_SECRETS 로 클라이언트 파일 경로 재정의 가능.
+
+썸네일: 렌더 디렉터리에 thumbnail.png 또는 thumbnail.jpg 가 있으면 업로드 후 자동 적용.
 
 요구: pip install google-api-python-client google-auth-oauthlib
 """
@@ -54,14 +57,14 @@ def save_published(records: list[dict]) -> None:
     PUBLISHED_PATH.write_text(json.dumps(records, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def get_service():
+def get_service(lang: str):
     from google.auth.transport.requests import Request
     from google.oauth2.credentials import Credentials
     from google_auth_oauthlib.flow import InstalledAppFlow
     from googleapiclient.discovery import build
 
     secrets = Path(os.environ.get("YT_CLIENT_SECRETS", "client_secrets.json"))
-    token_path = Path(".credentials/token.json")
+    token_path = Path(f".credentials/token-{lang}.json")
     creds = None
     if token_path.exists():
         creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
@@ -71,11 +74,20 @@ def get_service():
         else:
             if not secrets.exists():
                 raise FileNotFoundError(f"OAuth 클라이언트 파일 없음: {secrets}")
+            print(f"'{lang}' 채널 계정으로 브라우저 인증을 진행하세요.", file=sys.stderr)
             flow = InstalledAppFlow.from_client_secrets_file(str(secrets), SCOPES)
             creds = flow.run_local_server(port=0)
         token_path.parent.mkdir(parents=True, exist_ok=True)
         token_path.write_text(creds.to_json(), encoding="utf-8")
     return build("youtube", "v3", credentials=creds)
+
+
+def find_thumbnail(render_dir: Path) -> Path | None:
+    for name in ("thumbnail.png", "thumbnail.jpg"):
+        p = render_dir / name
+        if p.exists():
+            return p
+    return None
 
 
 def upload(render_dir: Path, privacy: str, dry_run: bool) -> dict | None:
@@ -95,13 +107,15 @@ def upload(render_dir: Path, privacy: str, dry_run: bool) -> dict | None:
 
     if dry_run:
         print(f"[dry-run] 업로드 대상 검증 통과: {video}")
+        thumb = find_thumbnail(render_dir)
+        print(f"[dry-run] 썸네일: {thumb or '없음 (자동 생성 썸네일 사용됨 — 권장하지 않음)'}")
         print(json.dumps(body["snippet"] | {"description": body['snippet']['description'][:80] + "…"},
                          ensure_ascii=False, indent=2))
         return None
 
     from googleapiclient.http import MediaFileUpload
 
-    service = get_service()
+    service = get_service(lang)
     media = MediaFileUpload(str(video), chunksize=8 * 1024 * 1024, resumable=True)
     request = service.videos().insert(part="snippet,status", body=body, media_body=media)
     response = None
@@ -109,6 +123,13 @@ def upload(render_dir: Path, privacy: str, dry_run: bool) -> dict | None:
         status, response = request.next_chunk()
         if status:
             print(f"  업로드 {int(status.progress() * 100)}%", file=sys.stderr)
+
+    thumb = find_thumbnail(render_dir)
+    if thumb:
+        service.thumbnails().set(videoId=response["id"], media_body=MediaFileUpload(str(thumb))).execute()
+        print(f"  썸네일 적용: {thumb.name}", file=sys.stderr)
+    else:
+        print("  경고: thumbnail.png/jpg 없음 — 자동 생성 썸네일 사용됨", file=sys.stderr)
 
     record = {
         "video_id": response["id"],
