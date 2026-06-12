@@ -1,0 +1,21 @@
+# 인증 정보 — 절대 커밋 금지
+client_secrets.json
+.credentials/
+
+# 대용량 산출물 (렌더 결과물은 로컬/스토리지 보관, 메타만 커밋)
+library/renders/**/*.mp4
+library/renders/**/*.wav
+library/renders/**/*.mp3
+library/renders/**/*.png
+library/renders/**/*.jpg
+
+# 자막 원시 수집물 (필요 시 재수집 가능)
+sources/_inbox/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# OS
+.DS_Store

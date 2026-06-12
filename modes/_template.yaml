@@ -1,0 +1,40 @@
+# 모드 스냅샷 템플릿 — 자본재 축적의 단위
+# 주제→대본→영상→발행까지 끝까지 잘 작동한 "설정 전체"를 복사해 저장한다.
+# 파일명: <niche>-<style>-v<N>.yaml (예: history-senior-narrative-v1.yaml)
+
+mode:
+  name: ""                     # 예: history-senior-narrative-v1
+  created: ""                  # YYYY-MM-DD
+  status: candidate            # candidate(1회 성공) | validated(3회+ 재현) | default(신규 생산 기본값) | retired
+  origin_video: ""             # 이 모드를 만든 영상 (library/renders/... 경로 + URL)
+
+topic_selection:
+  niche: ""                    # history | science | space | society
+  outlier_threshold: 3         # 채택 임계 배수
+  evergreen_criteria: ""       # 이 모드에서 통한 에버그린 판단 기준 메모
+  source_requirement: ""       # 요구한 소스 수준 (예: 1차 사료 2개 이상)
+
+script:
+  skills: [made-to-stick, influence-cialdini, hook-retention, senior-friendly]
+  structure: ""                # 예: cold-open훅45s → 회상맥락 → 본문4블록 → 큰그림
+  target_length_min: 0         # 목표 영상 분량(분)
+  chars_per_min: 300           # 분당 글자수 기준
+  critic_pass_score: 0         # 통과 당시 점수 (NN/60)
+  notes: ""                    # 이 모드 특유의 대본 규칙 (fewshot 경로 등)
+
+production:
+  tts: ""                      # 기본추천 | 슈퍼톤 | 무료 | elevenlabs
+  tts_settings: { speed: 0.95, pause_sec: 0.5 }
+  visual_style: ""             # 이미지 소스·HTML 템플릿·자막 스타일
+  bgm: ""                      # 트랙/볼륨 규칙
+
+packaging:
+  title_pattern: ""            # 통한 제목 공식 (예: "의외수치 + 질문형")
+  thumbnail_pattern: ""        # 구도·색·텍스트 규칙
+
+performance:                   # 개선 에이전트가 발행 후 기록 (7일/30일)
+  - date: ""
+    views: 0
+    ctr: 0.0
+    avg_view_duration_pct: 0.0
+    hypothesis: ""             # 다음 개선 가설

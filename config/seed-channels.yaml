@@ -1,0 +1,32 @@
+# 시드 채널 리스트 (인간 큐레이션 입력 — garbage-in 차단의 1차 방어선)
+#
+# 원칙:
+# - 10~30개의 "작은" 채널 (구독자 대비 가끔 터지는 채널이 아웃라이어 신호가 선명함)
+# - 니치: 역사 · 과학 · 우주 · 사회 (+ 고전·학술·공공자료가 풍부한 인접 영역)
+# - 사람이 직접 보고 품질을 확인한 채널만 추가한다
+#
+# scripts/outlier_score.py 가 이 파일을 읽어 채널별 아웃라이어 점수를 계산한다.
+
+defaults:
+  recent_videos: 50        # 중앙값 계산에 쓸 최근 영상 수 (20~50)
+  window_months: 6         # 아웃라이어 후보 추출 기간 (최근 3~6개월)
+  thresholds:
+    analyze: 3             # 3배 = 분석 가치
+    deep_dive: 8           # 8배 = 심층 연구
+    breakout: 25           # 25배 = 돌파
+
+channels:
+  # 예시 항목 — 실제 채널로 교체할 것
+  - id: example-history-ko
+    url: https://www.youtube.com/@예시역사채널
+    niche: history
+    language: ko
+    notes: "한국사 심층 해설. 시니어 시청층 두터움."
+    enabled: false
+
+  - id: example-space-en
+    url: https://www.youtube.com/@ExampleSpaceChannel
+    niche: space
+    language: en
+    notes: "우주·천문 에버그린. 학술 소스 인용이 충실함."
+    enabled: false

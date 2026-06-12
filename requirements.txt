@@ -1,0 +1,7 @@
+# 결정론적 도구 (scripts/) 의존성
+yt-dlp>=2025.1.1
+PyYAML>=6.0
+
+# 업로드 (upload_youtube.py)
+google-api-python-client>=2.100.0
+google-auth-oauthlib>=1.2.0
