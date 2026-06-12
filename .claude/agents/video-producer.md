@@ -14,31 +14,37 @@ tools: Bash, Read, Write, Glob, Grep
 
 ## 처리 절차 (결정론 작업은 전부 `scripts/produce_video.py`가 수행 — 직접 구현 금지)
 
-### 1. 씬 구성 검토 (LLM 판단)
+상세 가이드: `docs/video-production.md` · 타입 정의·프리셋: `config/video-modes.yaml`
+
+### 1. 씬 구성 + 비주얼 설계 (LLM 판단 — 너의 핵심 작업)
 ```bash
 python scripts/produce_video.py library/scripts/<slug>/draft-v<final>.md --scenes-only
 ```
-- 생성된 `scenes.json`을 검토: `card_text`(화면 문구)를 씬 내용에 맞게 다듬고, 라이선스 확인된 이미지가 있으면 `image`에 경로 지정 (없으면 자동 텍스트 카드 사용).
-- 씬당 15~40초 권장 — 90초 초과 씬은 대본의 `<!-- scene: -->` 주석 추가를 scriptwriter에 요청.
+생성된 `scenes.json`의 씬마다 `visual`을 설계한다:
+- **type 선택** (상황별 기준은 docs/video-production.md 표): 훅·클라이맥스=ai-image, 역사 재현=ai-image, 보편 사물·풍경=stock, 챕터 전환·연도=card, 퍼블릭 도메인 진본 존재=file
+- **시각 리듬**: 같은 타입 5씬 연속 금지. 모션(zoom/pan)은 자동 교차가 기본, 감정 고조 씬만 zoom-in 고정
+- stock은 `query`(영어 검색어), ai-image/ai-video는 `prompt` 작성 — 프롬프트는 대본의 장면 묘사와 일치시킬 것 (시대·복식·정서). 실존 인물은 뒷모습·실루엣 위주
+- `card_text`를 씬 내용에 맞게 다듬기 (연도·핵심구 3~5단어)
 
-### 2. TTS·렌더 (코드)
+### 2. AI 비주얼 생성 (MCP/API — 에이전트가 직접 호출)
+- ai-image/ai-video 씬: 사용 가능한 이미지·영상 생성 MCP 서버(또는 API)로 생성 →
+  `<render_dir>/genai/scene-XX.png|mp4` 저장 → scenes.json `visual.file`에 기록
+- 생성 모델·프롬프트를 assets.md에 기록. MCP가 없으면 해당 씬을 card/stock으로 강등하고 보고
+
+### 3. TTS·렌더 (코드)
 ```bash
-python scripts/produce_video.py <draft> [--tts edge|none] [--voice ...] [--bgm <파일>]
+python scripts/produce_video.py <draft> [--tts edge|none] [--bgm <파일>]
 ```
-| 엔진 | 용도 |
-|---|---|
-| `edge` (기본) | 무료 한국어 신경망 음성 (ko-KR-InJoonNeural, rate -7% — 시니어 친화 기본값) |
-| `none` | 무음 타이밍 시안 (네트워크 차단 환경·검증용) |
-| 슈퍼톤/ElevenLabs | API 키 확보 후 produce_video.py에 추가 예정 |
-- 씬별 실측 길이는 scenes.json에 자동 기록, 씬 간 0.6초 호흡 자동 삽입.
-- BGM은 라이선스 확인된 트랙만, -18dB 자동 믹스.
+- edge-tts 기본 (ko-KR-InJoonNeural, -7% — 시니어 친화), 워드 타이밍 기반 번인 자막 자동
+- stock 씬은 query만 있으면 렌더 중 자동 다운로드 + 출처 기록 (PEXELS/PIXABAY_API_KEY 필요)
+- 켄번즈 모션·페이드·씬 호흡 0.6초·BGM -18dB 자동
 
-### 3. 라이선스 대장 (발행 게이트)
-- 자동 생성된 `assets.md`에 사용 이미지·BGM의 출처·라이선스·확인일을 **전 항목 기입** (미기입 시 발행 불가).
+### 4. 라이선스 대장 (발행 게이트)
+- `assets.md` 전 항목 기입 (stock-credits.json 자동 기록분 옮겨 적기, 생성물은 모델·프롬프트). 미기입 시 발행 불가.
 
-### 4. 썸네일 합성 (thumbnail-meta의 스펙 확정 후)
+### 5. 썸네일 합성 (thumbnail-meta 스펙 확정 후)
 ```bash
-python scripts/make_thumbnail.py <render_dir> --from-meta   # 또는 --text "..." --image ...
+python scripts/make_thumbnail.py <render_dir> --from-meta
 ```
 
 ### 5. 썸네일 컨텍스트 인계 (필수)

@@ -1,0 +1,57 @@
+# 영상 제작 모드 정의 — 씬 단위로 섞어 쓰는 비주얼 소스 4단계
+# video-producer 에이전트가 씬 역할에 따라 선택, produce_video.py가 조립한다.
+# 참고 차용: MoneyPrinterTurbo(스톡+자막+BGM 파이프라인), 하이퍼프레임식(AI 이미지 시퀀스+모션),
+#           MCP 호출형(Kling/Veo/fal — 에이전트가 생성, 코드는 파일만 소비)
+
+visual_types:
+  card:        # 텍스트 카드 (자체 생성 — 비용 0, 항상 가능)
+    용도: "챕터 전환, 인용구, 연도·수치 강조, 자료가 없는 추상 개념"
+    비용: 없음
+    구현: produce_video.py 내장 (고대비·큰글씨, 채널 톤)
+
+  stock:       # 스톡 사진·영상 (Pexels/Pixabay 무료 API)
+    용도: "풍경·분위기·사물 컷 (바다, 옛 거리, 전화기, 궁궐 등 보편 이미지)"
+    비용: "무료 (API 키 발급 필요: PEXELS_API_KEY, PIXABAY_API_KEY)"
+    구현: scripts/fetch_stock.py → 라이선스·출처 자동 기록
+    주의: "역사 고증이 필요한 장면에 현대 스톡을 쓰지 않는다 (시대 불일치 = 신뢰 붕괴)"
+
+  ai-image:    # AI 생성 이미지 + 모션 (하이퍼프레임식 — 역사 채널의 주력)
+    용도: "역사 재현 장면 (인물·복식·시대 묘사), 스톡이 못 채우는 특정 장면"
+    비용: "장당 과금 (fal.ai 등) 또는 MCP 서버 경유"
+    구현: "video-producer 에이전트가 MCP/API로 생성 → genai/scene-XX.png 배치 → 코드가 소비"
+    주의: "실존 인물은 초상 왜곡 주의. 생성 프롬프트를 assets.md에 기록"
+
+  ai-video:    # AI 생성 영상 클립 (Kling/Veo/Hailuo — i2v/t2v)
+    용도: "클라이맥스 1~2씬만 (불길이 번지는 봉수대, 궁중의 전화 장면 등)"
+    비용: "초당 과금 — 가장 비쌈. 영상당 1~2클립 한도"
+    구현: "에이전트가 MCP(mcp-kling, mcp-video-gen 등)로 생성 → genai/scene-XX.mp4 배치"
+
+# 공통 기본기 (모든 타입에 자동 적용 — produce_video.py)
+fundamentals:
+  motion: "정지 이미지에 켄번즈(줌·팬) 자동 적용 — zoom-in/zoom-out/pan-left/pan-right/none"
+  subtitles: "번인 자막 (문장 단위, 시니어 가독: 큰 글씨·외곽선). edge-tts 워드 타이밍 기반"
+  audio: "씬 간 0.6초 호흡, BGM -18dB 믹스, 페이드 인/아웃"
+
+# 프리셋 (영상 전체의 기본 배합 — 씬별 오버라이드 가능)
+presets:
+  documentary-stills:   # 기본값. 역사 다큐 정석 스타일, 저비용
+    default: ai-image
+    fallback: card      # 이미지 미배치 씬은 카드로
+    rules:
+      - "훅·클라이맥스 씬: ai-image 필수 (가장 강한 그림)"
+      - "챕터 전환·연도 강조: card"
+      - "보편 사물·풍경: stock 허용"
+
+  stock-broll:          # MoneyPrinterTurbo식. 최저 비용·최고 속도, 보편 주제용
+    default: stock
+    fallback: card
+
+  premium-mixed:        # 성과 검증된 주제의 리메이크·대표작용
+    default: ai-image
+    fallback: stock
+    rules:
+      - "클라이맥스 1~2씬: ai-video"
+      - "나머지: documentary-stills와 동일"
+
+  card-only:            # 시안·검증용 (비용 0, 네트워크 불필요)
+    default: card

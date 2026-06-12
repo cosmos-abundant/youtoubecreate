@@ -80,25 +80,58 @@ class TestProduceVideo(unittest.TestCase):
         self.assertEqual(scenes[0]["card_text"], "1919년 홍릉")  # 쉼표 앞 절만
         self.assertNotIn("일반 주석", scenes[1]["text"])
         self.assertIn("이어지는 문장.", scenes[1]["text"])
-        self.assertIsNone(scenes[0]["image"])
+        self.assertEqual(scenes[0]["visual"]["type"], "card")
+        # 기본 모션 줌인/줌아웃 교차
+        self.assertEqual(scenes[0]["visual"]["motion"], "zoom-in")
+        self.assertEqual(scenes[1]["visual"]["motion"], "zoom-out")
 
     def test_merge_preserves_manual_edits_when_text_unchanged(self):
         with tempfile.TemporaryDirectory() as tmp:
             draft = self._write_draft(Path(tmp))
             scenes = produce_video.parse_scenes(draft)
-            scenes[0]["image"] = "assets/photo.png"
+            scenes[0]["visual"] = {"type": "ai-image", "file": "genai/scene-01.png",
+                                   "prompt": "test", "motion": "pan-left"}
             scenes[0]["card_text"] = "수동 문구"
             scenes_path = Path(tmp) / "scenes.json"
             scenes_path.write_text(json.dumps({"scenes": scenes}, ensure_ascii=False), encoding="utf-8")
 
             merged = produce_video.load_or_merge_scenes(draft, scenes_path)
-            self.assertEqual(merged[0]["image"], "assets/photo.png")
+            self.assertEqual(merged[0]["visual"]["type"], "ai-image")
+            self.assertEqual(merged[0]["visual"]["motion"], "pan-left")
             self.assertEqual(merged[0]["card_text"], "수동 문구")
 
             # 본문이 바뀐 씬은 수동 필드를 승계하지 않는다 (안전 우선)
             draft.write_text(self.DRAFT.replace("첫 씬 본문입니다.", "바뀐 본문입니다."), encoding="utf-8")
             merged2 = produce_video.load_or_merge_scenes(draft, scenes_path)
-            self.assertIsNone(merged2[0]["image"])
+            self.assertEqual(merged2[0]["visual"]["type"], "card")
+
+    def test_legacy_image_field_migrates_to_visual(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            draft = self._write_draft(Path(tmp))
+            scenes = produce_video.parse_scenes(draft)
+            old = [dict(s) for s in scenes]
+            old[0].pop("visual")
+            old[0]["image"] = "assets/photo.png"  # 구버전 스키마
+            scenes_path = Path(tmp) / "scenes.json"
+            scenes_path.write_text(json.dumps({"scenes": old}, ensure_ascii=False), encoding="utf-8")
+            merged = produce_video.load_or_merge_scenes(draft, scenes_path)
+            self.assertEqual(merged[0]["visual"]["type"], "file")
+            self.assertEqual(merged[0]["visual"]["file"], "assets/photo.png")
+
+    def test_split_sentences_and_proportional_cues(self):
+        cues = produce_video._cues_proportional(
+            produce_video.split_sentences("첫 문장입니다. 두 번째는 조금 더 깁니다! 끝?"), 10.0)
+        self.assertEqual(len(cues), 3)
+        self.assertAlmostEqual(cues[0]["start"], 0.0)
+        self.assertAlmostEqual(cues[-1]["end"], 10.0, places=2)
+        self.assertLess(cues[0]["end"] - cues[0]["start"],
+                        cues[1]["end"] - cues[1]["start"])  # 글자수 비례
+
+    def test_kenburns_expr(self):
+        self.assertIn("zoompan=z='1+0.10*on/240'", produce_video.kenburns_expr("zoom-in", 240))
+        self.assertIn("1.10-0.10*on/240", produce_video.kenburns_expr("zoom-out", 240))
+        self.assertIn("(1-on/240)", produce_video.kenburns_expr("pan-left", 240))
+        self.assertIn("1.001", produce_video.kenburns_expr("none", 240))
 
 
 class TestUploadYoutube(unittest.TestCase):

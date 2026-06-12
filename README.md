@@ -48,10 +48,12 @@ python scripts/outlier_score.py
 시스템 요구: **ffmpeg** + 한글 폰트(리눅스만 `fonts-nanum` 설치 필요). 이후:
 
 ```bash
-# 1. 씬 구성 시안 생성 → scenes.json의 card_text/image 검토·수정
+# 1. 씬 구성 시안 생성 → scenes.json의 visual(타입·검색어·프롬프트·모션)·card_text 설계
+#    비주얼 4타입(card/stock/ai-image/ai-video) 혼합 — config/video-modes.yaml, docs/video-production.md
 python scripts/produce_video.py library/scripts/<slug>/draft-v2.md --scenes-only
 
-# 2. TTS(edge-tts, 무료) + 렌더 → final.mp4
+# 2. TTS(edge-tts) + 켄번즈 모션 + 번인 자막 + 렌더 → final.mp4
+#    stock 씬은 자동 다운로드(PEXELS_API_KEY/PIXABAY_API_KEY), AI 씬은 에이전트가 MCP로 생성·배치
 python scripts/produce_video.py library/scripts/<slug>/draft-v2.md
 
 # 3. 썸네일 합성
