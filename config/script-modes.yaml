@@ -1,0 +1,104 @@
+# 대본 생성 모드 — 스타일 프리셋 × 길이·포맷
+#
+# 영상 제작(config/video-modes.yaml)이 비주얼을 고르듯, 대본도 스타일과 길이를 고른다.
+# scriptwriter 에이전트가 작업 시작 시 선택하거나 modes/에서 지정한다.
+# 사양 확인: python scripts/script_mode.py --style <style> --format <format>
+#
+# 어떤 조합이든 다음 불변 규칙은 유지된다 (CLAUDE.md):
+#   - 모든 주장은 sources/facts.md의 [S##] 출처에 근거 (claims.md 추적)
+#   - script-critic 게이트 통과 후에만 제작 단계로
+#   - 용어집(config/glossary.md) 준수
+
+# ======================================================================
+# 스타일 프리셋 — 톤·구조·화자
+# ======================================================================
+styles:
+  documentary:                 # 기본값. 덕률풍 1호가 쓴 방식
+    name: 다큐 정통
+    description: 차분한 내레이션으로 사실을 쌓아 의미로 닫는다. 역사 채널 표준.
+    structure: "cold-open 훅 → 회상 맥락 → 본문 3~5블록(시간·주제순) → 큰 그림"
+    hook: "의외의 장면·수치로 시작해 호기심 격차를 연다"
+    narration_person: "3인칭 관찰자 (시청자는 '여러분')"
+    skill_emphasis: [made-to-stick, senior-friendly]
+    tone: 차분·품격·존중
+    caution: ""
+
+  mystery:                     # 미스터리 추적형
+    name: 미스터리 추적형
+    description: 풀리지 않은 질문을 던지고 단서를 하나씩 추적해 마지막에 진실을 공개.
+    structure: "수수께끼 제시 → 단서1 → 작은 반전 → 단서2 → … → 진실 공개 → 의미"
+    hook: "아직 답하지 않은 미스터리·모순을 전면에 세운다"
+    narration_person: "3인칭 추적자 (시청자를 '우리'로 동행시킴)"
+    skill_emphasis: [hook-retention, made-to-stick]
+    tone: 긴장·호기심 유지
+    caution: "긴장을 위해 사실을 과장하지 않는다. 격차는 반드시 회수한다."
+
+  first-person:                # 인물 1인칭 시점
+    name: 인물 1인칭
+    description: 역사 속 한 인물의 눈으로 사건을 체험시켜 감정 이입을 극대화.
+    structure: "인물의 결정적 순간 → 회상 → 사건을 그의 시선으로 전개 → 역사적 의미로 줌아웃"
+    hook: "인물의 가장 극적인 순간에서 시작"
+    narration_person: "1인칭 또는 밀착 3인칭"
+    skill_emphasis: [made-to-stick, influence-cialdini]
+    tone: 몰입·감정
+    caution: "내면·대사·심리는 사료 근거가 있을 때만. 추측은 '~했을 것입니다'로 명시(claims 추적 유지)."
+
+  listicle:                    # 리스트(Top N)형
+    name: 리스트형
+    description: '"N가지" 구조로 각 항목이 미니 스토리. 진입장벽이 낮고 클릭이 강하다.'
+    structure: "훅(N개 예고) → 항목1…항목N(각 미니훅·미니결론) → 종합 의미"
+    hook: "숫자 + 의외성 (예: '교과서가 빠뜨린 N가지')"
+    narration_person: "3인칭 (시청자는 '여러분')"
+    skill_emphasis: [hook-retention, made-to-stick]
+    tone: 경쾌하되 품격 유지
+    caution: "항목 나열이 슬롭이 되지 않게 — 각 항목도 사실 근거·작은 스토리 필수. 항목 간 난이도·흥미 기복 설계."
+
+# ======================================================================
+# 길이·포맷 프리셋
+# ======================================================================
+formats:
+  long:                        # 롱폼 (기본값)
+    name: 롱폼
+    target_min: [8, 10]
+    chars: [2400, 3000]        # 낭독 분당 ~300자
+    blocks: [4, 6]
+    minihook_interval_sec: 90
+    aspect: "16:9"
+    senior_layer: full         # 시니어 친화 레이어 전면 적용
+    use: "심층 주제, 메인 채널 표준. 8분+는 광고 수익에 유리."
+
+  mid:                         # 미드폼
+    name: 미드폼
+    target_min: [3, 5]
+    chars: [900, 1500]
+    blocks: [3, 4]
+    minihook_interval_sec: 60
+    aspect: "16:9"
+    senior_layer: full
+    use: "단일 사건·개념, 입문 친화. 신규 시청자 진입용."
+
+  short:                       # 쇼츠
+    name: 쇼츠
+    target_min: [0.5, 1]
+    chars: [150, 320]
+    blocks: [1, 2]
+    minihook_interval_sec: 0   # 통째로 하나의 훅
+    aspect: "9:16"
+    senior_layer: light        # 속도 우선 — 시니어 레이어 약화
+    use: "1개 충격 사실·훅으로 알고리즘 유입. 롱폼으로 유도하는 미끼."
+    caution: "첫 1~2초 즉시 훅. 도입·맥락 생략. 용어 풀이는 꼭 필요한 1개만. 끝에 롱폼 연결 1문장."
+
+# ======================================================================
+# 기본 배합 (모드 미지정 시)
+# ======================================================================
+defaults:
+  style: documentary
+  format: long
+
+# ======================================================================
+# 조합 가이드 (스타일 × 포맷 — 자유 조합)
+# ======================================================================
+# - 롱폼 × 다큐/1인칭: 메인 영상 표준
+# - 미드폼 × 미스터리/리스트: 신규 유입·입문
+# - 쇼츠 × 미스터리/리스트: 유입 미끼 (시니어 레이어는 light로 자동 약화)
+# - 검증된 조합은 modes/에 스냅샷으로 저장 → mode-improver가 성과로 갱신

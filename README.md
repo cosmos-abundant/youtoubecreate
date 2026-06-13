@@ -21,7 +21,7 @@ topic-scout → researcher → scriptwriter ⇄ script-critic → video-producer
 | `.claude/agents/` | 서브에이전트 9종 (topic-scout, researcher, scriptwriter, script-critic, video-producer, thumbnail-meta, orchestrator, book-to-scripts, mode-improver) |
 | `.claude/skills/` | 서적 전략 코드화 스킬 4종 (made-to-stick, influence-cialdini, hook-retention, senior-friendly) |
 | `.claude/commands/` | `/produce` — 파이프라인 1회 실행 진입점 |
-| `scripts/` | 결정론적 도구 — `yt_subtitles.py`, `outlier_score.py`, `upload_youtube.py`, `fetch_analytics.py`, `upload_cron.sh` |
+| `scripts/` | 결정론적 도구 — `script_mode.py`(대본 모드), `produce_video.py`·`make_thumbnail.py`·`fetch_stock.py`(영상), `outlier_score.py`, `yt_subtitles.py`, `upload_youtube.py`, `fetch_analytics.py` |
 | `config/` | `channel.yaml` (채널 아이덴티티 — 역사산책), `seed-channels.yaml` (인간 큐레이션 시드), `glossary.md` (용어집) |
 | `docs/` | 운영 문서 — `channel-rebrand.md` (리브랜딩 체크리스트) |
 | `sources/` | 출처 태그가 달린 사실 리소스 풀 |
@@ -42,6 +42,19 @@ python scripts/outlier_score.py
 ```
 
 파이프라인 실행은 Claude Code에서 `/produce` (또는 `/produce <topic-slug>`).
+
+## 대본 모드 선택 (스타일 × 길이)
+
+대본도 영상처럼 스타일과 길이를 고른다 (`config/script-modes.yaml`, 가이드 `docs/script-modes.md`):
+
+```bash
+python scripts/script_mode.py --list                          # 가능한 조합
+python scripts/script_mode.py --style mystery --format short  # 사양 미리보기
+```
+
+- 스타일: `documentary`(다큐 정통·기본) · `mystery`(미스터리 추적형) · `first-person`(인물 1인칭) · `listicle`(리스트형)
+- 길이: `long`(8~10분·기본) · `mid`(3~5분) · `short`(쇼츠 60초)
+- 파이프라인에 적용: `/produce <topic-slug> --style mystery --format mid`
 
 ## 영상 제작 (로컬 실행 — 결과물은 `library/renders/<lang>/<slug>/`에 저장)
 

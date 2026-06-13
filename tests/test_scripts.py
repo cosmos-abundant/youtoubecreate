@@ -14,8 +14,49 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 import outlier_score
 import produce_video
+import script_mode
 import upload_youtube
 import yt_subtitles
+
+
+class TestScriptMode(unittest.TestCase):
+    def setUp(self):
+        # 실제 config/script-modes.yaml로 검증 (저장소 루트 기준)
+        root = Path(__file__).resolve().parent.parent
+        self.cfg = script_mode.load_config(root / "config" / "script-modes.yaml")
+
+    def test_defaults(self):
+        spec = script_mode.resolve(self.cfg, None, None)
+        self.assertEqual(spec["style_id"], "documentary")
+        self.assertEqual(spec["format_id"], "long")
+        self.assertEqual(spec["target_min"], [8, 10])
+
+    def test_specific_combo(self):
+        spec = script_mode.resolve(self.cfg, "mystery", "short")
+        self.assertEqual(spec["style_name"], "미스터리 추적형")
+        self.assertEqual(spec["aspect"], "9:16")
+        self.assertEqual(spec["senior_layer"], "light")
+        # 스타일·포맷 주의사항이 둘 다 병합됨
+        self.assertEqual(len(spec["cautions"]), 2)
+
+    def test_invalid_names_raise(self):
+        with self.assertRaises(ValueError):
+            script_mode.resolve(self.cfg, "nope", "long")
+        with self.assertRaises(ValueError):
+            script_mode.resolve(self.cfg, "documentary", "nope")
+
+    def test_format_spec_text(self):
+        text = script_mode.format_spec(script_mode.resolve(self.cfg, "listicle", "mid"))
+        self.assertIn("리스트형 × 미드폼", text)
+        self.assertIn("3~5분", text)
+        self.assertIn("불변 규칙", text)
+
+    def test_all_presets_resolve(self):
+        for style in self.cfg["styles"]:
+            for fmt in self.cfg["formats"]:
+                spec = script_mode.resolve(self.cfg, style, fmt)
+                self.assertTrue(spec["structure"])
+                self.assertTrue(script_mode.format_spec(spec))
 
 
 class TestOutlierScore(unittest.TestCase):
