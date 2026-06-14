@@ -10,7 +10,9 @@ tools: Read, Write, Glob, Grep
 
 ## 입력
 - 양질 텍스트 파일 (학술서·고전·아티클 — 퍼블릭 도메인 또는 정당 인용 범위 확인 필수)
+  - **.docx/.pdf 등 바이너리는 먼저 코드로 변환**: `python scripts/extract_docx.py <파일> --slug <slug>` → `sources/books/<slug>/source.md`. 큰 책은 Read의 offset/limit로 부분 읽기(전체 적재 금지). 변환 원문은 저작권상 git 미추적.
 - `config/glossary.md` (용어집·금지규칙·준수규칙 — 번역 에이전트에서 검증된 자산 이식)
+- `config/script-modes.yaml` (씨앗마다 어울리는 style × format을 추천하기 위해)
 
 ## 처리: 분할 프롬프트 방식 (번역 에이전트에서 검증된 패턴)
 
@@ -27,14 +29,20 @@ tools: Read, Write, Glob, Grep
 
 ## 출력
 
-`library/topics/book-<book-slug>/`:
+`library/topics/book-<book-slug>/` (Write로 직접 저장. 막히면 텍스트로 반환해 부모가 배치):
 ```
-summary.md          # 전체 요약 + 챕터별 요약
-seeds.md            # 대본 씨앗 목록 (씨앗별: 핵심 인사이트, 재미요소, 추천 각도, 에버그린 판단)
-queue/<seed>.md     # scriptwriter 인계용 — 주제 문서 형식 (출처는 해당 책 챕터로 태그)
+summary.md          # 전체 요약 + 챕터별 요약 (근거 행 범위 포함)
+seeds.md            # 대본 씨앗 목록 (씨앗별: 핵심 인사이트, 재미요소, 추천 각도, 에버그린 판단,
+                    #   추천 모드 style×format, 출처 태그) + 상단에 출처 태그 표
+queue/<seed>.md     # 가장 강한 씨앗을 scriptwriter 인계용 주제 문서 형식으로 (library/topics 형식과 동일)
 ```
 
+## 출처 태그 체계 (책 기반)
+- `[B-<bookslug>-NN]` 형식. 예: `[B-softwar-02]` = `sources/books/softwar/source.md`의 특정 위치.
+- seeds.md 상단에 **태그 → 행 범위 → 내용** 표를 두어, researcher가 공개 1차 문서로 교차검증 후 `[S##]`로 승격할 수 있게 한다 (책 단독 사실은 단정 금지, 헤지 처리).
+
 ## 규칙
-- 원문 문장을 대본 씨앗에 복제하지 않는다. 사실·구조·인사이트만 추출.
-- 씨앗마다 근거 챕터·페이지를 태그한다 (researcher의 [S] 태그와 동일한 역할).
-- 한 책에서 씨앗 3개 미만이면 책 선정 자체를 재고하라고 보고한다.
+- 원문 문장을 대본 씨앗에 복제·번역 전재하지 않는다. 사실·구조·인사이트만 추출해 독창적 재구성(번역 아님).
+- **저작권 인용 플래그**: 원문에 연설·시·가사 등 저작권 있는 인용문이 든 챕터는 씨앗에 `⚠ 저작권 플래그`를 달아, scriptwriter가 인용문을 복제하지 않고 사실·사건만 쓰도록 경고한다.
+- 사회·경제·국제(프리미엄 버티컬) 주제는 **공개 출처만, 개인·기업·국가 실명 비난 금지**, 중립·교양 톤 (CLAUDE.md).
+- 한 책에서 씨앗 3개 미만이면 책 선정 자체를 재고하라고 보고한다. 챕터가 여럿 독립 영상감이면 **시리즈 모드화**를 제안한다.

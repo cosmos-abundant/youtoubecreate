@@ -7,6 +7,9 @@
 ```
 sources/
 ├── _inbox/<video_id>/        # yt_subtitles.py 기본 출력 (주제 배정 전 임시)
+├── books/<book-slug>/        # 책 기반 입력 (book-to-scripts)
+│   └── source.md             # extract_docx.py 변환물 — 저작권상 git 미추적, 리서치 인풋 전용
+│                             #   책 기반 출처 태그: [B-<book-slug>-NN]
 └── <topic-slug>/
     ├── facts.md              # 사실 리소스 풀 — 모든 사실에 [S##] 출처 태그
     ├── sources.md            # [S##] 소스 대장: 제목, URL/서지, 라이선스, 수집일
