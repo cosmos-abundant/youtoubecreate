@@ -15,6 +15,9 @@ library/renders/**/segments/
 # 자막 원시 수집물 (필요 시 재수집 가능)
 sources/_inbox/
 
+# 책 원문 변환물 (저작권 — 리서치 인풋 전용, git 미추적. 추출된 씨앗만 커밋)
+sources/books/*/source.md
+
 # cron 로그
 logs/
 

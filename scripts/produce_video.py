@@ -38,7 +38,8 @@ CHARS_PER_MIN = 300
 SCENE_GAP_SEC = 0.6
 FPS = 24
 DEFAULT_VOICE = "ko-KR-InJoonNeural"
-DEFAULT_RATE = "-7%"
+DEFAULT_RATE = "+5%"         # 또렷하되 답답하지 않게. (이전 -7%가 느리다는 피드백 반영)
+                             # 더 빠르게: --rate +15% / 더 천천히: --rate -5%
 
 CARD_BG = (29, 26, 22)
 CARD_FG = (242, 232, 213)
