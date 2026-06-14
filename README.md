@@ -23,7 +23,7 @@ topic-scout → researcher → scriptwriter ⇄ script-critic → video-producer
 | `.claude/agents/` | 서브에이전트 9종 (topic-scout, researcher, scriptwriter, script-critic, video-producer, thumbnail-meta, orchestrator, book-to-scripts, mode-improver) |
 | `.claude/skills/` | 서적 전략 코드화 스킬 4종 (made-to-stick, influence-cialdini, hook-retention, senior-friendly) |
 | `.claude/commands/` | `/produce` — 파이프라인 1회 실행 진입점 |
-| `scripts/` | 결정론적 도구 — `script_mode.py`(대본 모드), `extract_docx.py`(책→텍스트), `produce_video.py`·`make_thumbnail.py`·`fetch_stock.py`(영상), `outlier_score.py`, `yt_subtitles.py`, `upload_youtube.py`, `fetch_analytics.py` |
+| `scripts/` | 결정론적 도구 — `script_mode.py`(대본 모드), `script_lint.py`(대본 문체·리듬 계측), `extract_docx.py`(책→텍스트), `produce_video.py`·`make_thumbnail.py`·`fetch_stock.py`(영상), `outlier_score.py`, `yt_subtitles.py`, `upload_youtube.py`, `fetch_analytics.py` |
 | `config/` | `channel.yaml` (채널 아이덴티티 — 역사산책), `seed-channels.yaml` (인간 큐레이션 시드), `glossary.md` (용어집) |
 | `docs/` | 운영 문서 — `channel-rebrand.md` (리브랜딩 체크리스트) |
 | `sources/` | 출처 태그가 달린 사실 리소스 풀 |

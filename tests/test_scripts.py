@@ -14,9 +14,37 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 import outlier_score
 import produce_video
+import script_lint
 import script_mode
 import upload_youtube
 import yt_subtitles
+
+
+class TestScriptLint(unittest.TestCase):
+    def test_monotone_flagged(self):
+        # 같은 길이·같은 어미·매 문장 쉼표 → 단조 신호가 떠야 한다
+        mono = " ".join(["철수는, 학교에 갑니다."] * 6)
+        a = script_lint.analyze(mono)
+        self.assertLess(a["cv"], 0.45)
+        self.assertGreaterEqual(a["max_same_ending_run"], 3)
+        self.assertTrue(a["warnings"])
+
+    def test_varied_passes(self):
+        varied = ("불이 켜졌다. 그 작은 빛 하나가 부산에서 서울까지 닿는 데 걸린 시간은 "
+                  "놀라우리만치 짧았는데, 당시 사람들은 그것을 믿지 못했다. 왜였을까. "
+                  "기록은 침묵한다. 그러나 단서는 남아 있었고, 우리는 그 흐릿한 자취를 "
+                  "한 줄씩 되짚어 볼 참이다. 시작해 보자.")
+        a = script_lint.analyze(varied)
+        self.assertGreater(a["cv"], 0.45)
+
+    def test_load_text_strips_comments_and_headings(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "d.md"
+            p.write_text("<!-- scene: x -->\n# 제목\n진짜 본문입니다.\n", encoding="utf-8")
+            self.assertEqual(script_lint.load_text(p), "진짜 본문입니다.")
+
+    def test_ending_extraction(self):
+        self.assertEqual(script_lint.ending("그는 떠났습니다."), "났습니다")
 
 
 class TestScriptMode(unittest.TestCase):
