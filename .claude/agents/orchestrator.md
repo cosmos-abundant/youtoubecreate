@@ -13,9 +13,12 @@ tools: Bash, Read, Write, Glob, Grep, Agent
 ```
 1. topic-scout      → library/topics/ 검증된 주제          [게이트: 아웃라이어 3배+ & 에버그린 & 소스 가용]
 2. researcher       → sources/<slug>/facts.md              [게이트: 출처 태그 100%]
-3. scriptwriter     → library/scripts/<slug>/draft-v1.md
-4. script-critic    → review-v1.md                         [게이트: 48/60 + 불합격조건 0]
-   └ 불통과 시 3↔4 반복 (최대 3회, 그래도 불통과면 주제 폐기 후 보고)
+3. scriptwriter     → library/scripts/<slug>/draft-v1.md   [0단계에서 script_mode 사양 적용]
+3.5 린트(코드)     → python scripts/script_lint.py <draft>  [게이트: 경고 0건]
+   └ 서브에이전트는 Bash 불가 → **Bash 되는 주체(orchestrator 또는 메인 세션)가 직접 실행**해
+     경고를 scriptwriter에 전달하고 수정시킨다. 수기 계측을 신뢰하지 말 것.
+4. script-critic    → review-v1.md                         [게이트: 48/60 + 불합격조건 0, 린트 출력 첨부]
+   └ 불통과 시 3↔3.5↔4 반복 (최대 3회, 그래도 불통과면 주제 폐기 후 보고)
 5. video-producer   → library/renders/<lang>/<slug>/       [게이트: assets.md 라이선스 100%]
 6. thumbnail-meta   → meta.json
 7. 업로드            → scripts/upload_youtube.py (또는 cron 폴더 배치)
