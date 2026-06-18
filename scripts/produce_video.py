@@ -41,9 +41,16 @@ DEFAULT_VOICE = "ko-KR-InJoonNeural"
 DEFAULT_RATE = "+5%"         # 또렷하되 답답하지 않게. (이전 -7%가 느리다는 피드백 반영)
                              # 더 빠르게: --rate +15% / 더 천천히: --rate -5%
 
-CARD_BG = (29, 26, 22)
-CARD_FG = (242, 232, 213)
-CARD_ACCENT = (201, 162, 90)
+# 카드 색 팔레트 (차분한 역사 톤 — 씬마다 순환해 단조로움을 깬다)
+PALETTES = [
+    {"bg": (29, 26, 22), "fg": (242, 232, 213), "accent": (201, 162, 90)},   # 먹 + 금
+    {"bg": (20, 27, 34), "fg": (224, 235, 243), "accent": (120, 168, 196)},  # 감청 + 은
+    {"bg": (34, 23, 21), "fg": (240, 226, 218), "accent": (196, 116, 88)},   # 고동 + 동
+    {"bg": (22, 30, 26), "fg": (226, 240, 229), "accent": (138, 184, 148)},  # 묵녹 + 옥
+    {"bg": (30, 24, 32), "fg": (236, 228, 242), "accent": (170, 138, 196)},  # 자주 + 보라
+]
+CARD_BG = PALETTES[0]["bg"]   # 이미지 레터박스 채움 색 (하위호환)
+CARD_STYLES = ("title", "chapter", "quote", "number", "fullscreen")
 
 MOTIONS = ("zoom-in", "zoom-out", "pan-left", "pan-right", "none")
 VISUAL_TYPES = ("card", "stock", "ai-image", "ai-video", "file")
@@ -72,12 +79,24 @@ def parse_scenes(draft_path: Path) -> list[dict]:
         s["card_text"] = _default_card_text(s["visual_hint"])
         # 기본 모션: 줌인/줌아웃 교차 (정지화면이 살아 있게 — 켄번즈)
         s["visual"] = {"type": "card", "file": None, "query": None, "prompt": None,
-                       "motion": MOTIONS[(n - 1) % 2]}
+                       "motion": MOTIONS[(n - 1) % 2],
+                       "card_style": _default_card_style(s["id"], s["card_text"])}
     return scenes
 
 
 def _default_card_text(hint: str) -> str:
     return hint.split(",")[0].strip()[:24] or "역사산책"
+
+
+def _default_card_style(scene_id: int, card_text: str) -> str:
+    """씬 내용에 맞는 카드 유형 자동 배정 (video-producer가 scenes.json에서 조정 가능)."""
+    if scene_id == 1:
+        return "title"
+    if re.search(r"\d{3,4}", card_text):     # 연도·수치가 있으면 숫자 강조 카드
+        return "number"
+    if len(card_text) <= 6:                   # 아주 짧으면 풀스크린 임팩트
+        return "fullscreen"
+    return "chapter" if scene_id % 2 == 0 else "title"  # 나머지는 교대로 변주
 
 
 def load_or_merge_scenes(draft_path: Path, scenes_path: Path) -> list[dict]:
@@ -190,20 +209,88 @@ def write_srt(cues: list[dict], path: Path) -> None:
 
 # ---------------------------------------------------------------- 비주얼
 
+def _vignette(img, strength: float = 0.55):
+    """가장자리를 어둡게 해 깊이감을 준다 (단색 배경의 평면감 해소)."""
+    from PIL import Image, ImageDraw, ImageFilter
+
+    w, h = img.size
+    mask = Image.new("L", (w, h), 0)
+    md = ImageDraw.Draw(mask)
+    md.ellipse([int(-w * 0.25), int(-h * 0.25), int(w * 1.25), int(h * 1.25)], fill=255)
+    mask = mask.filter(ImageFilter.GaussianBlur(int(min(w, h) * 0.12)))
+    dark = Image.new("RGB", (w, h), (0, 0, 0))
+    return Image.composite(img, Image.blend(img, dark, strength), mask)
+
+
 def make_card(scene: dict, size: tuple[int, int], path: Path, font_path: str) -> None:
+    """카드 유형(card_style)·팔레트별로 다양한 텍스트 카드를 그린다."""
     from PIL import Image, ImageDraw, ImageFont
 
     w, h = size
-    img = Image.new("RGB", size, CARD_BG)
+    pal = PALETTES[(scene["id"] - 1) % len(PALETTES)]
+    bg, fg, accent = pal["bg"], pal["fg"], pal["accent"]
+    style = (scene.get("visual") or {}).get("card_style", "title")
+    text = scene["card_text"] or "역사산책"
+
+    img = Image.new("RGB", size, bg)
+    img = _vignette(img)
     d = ImageDraw.Draw(img)
-    d.rectangle([(int(w * 0.08), int(h * 0.42)), (int(w * 0.13), int(h * 0.425))], fill=CARD_ACCENT)
-    font_big = ImageFont.truetype(font_path, int(h * 0.075))
-    font_small = ImageFont.truetype(font_path, int(h * 0.03))
-    y = int(h * 0.46)
-    for line in (textwrap.wrap(scene["card_text"], width=12) or [" "])[:3]:
-        d.text((int(w * 0.08), y), line, font=font_big, fill=CARD_FG)
-        y += int(h * 0.10)
-    d.text((int(w * 0.08), int(h * 0.06)), "역사산책", font=font_small, fill=CARD_ACCENT)
+
+    def font(px):
+        return ImageFont.truetype(font_path, max(12, int(px)))
+
+    def centered(line, fnt, y, fill):
+        tw = d.textlength(line, font=fnt)
+        d.text(((w - tw) / 2, y), line, font=fnt, fill=fill)
+
+    chip = font(h * 0.028)
+    d.text((int(w * 0.06), int(h * 0.06)), "역사산책", font=chip, fill=accent)
+
+    if style == "fullscreen":
+        f = font(h * 0.16)
+        lines = textwrap.wrap(text, width=6)[:2] or [" "]
+        total = len(lines) * h * 0.17
+        y = (h - total) / 2
+        for ln in lines:
+            centered(ln, f, y, fg)
+            y += h * 0.17
+
+    elif style == "number":
+        num = (re.search(r"\d[\d,]*", text) or [None])
+        num = num.group(0) if hasattr(num, "group") else None
+        rest = text.replace(num, "").strip(" ·,-") if num else text
+        if num:
+            centered(num, font(h * 0.30), int(h * 0.26), accent)
+        centered(rest or " ", font(h * 0.06), int(h * 0.64), fg)
+
+    elif style == "quote":
+        centered("“", font(h * 0.20), int(h * 0.12), accent)
+        f = font(h * 0.066)
+        lines = textwrap.wrap(text, width=16)[:4]
+        y = (h - len(lines) * h * 0.085) / 2 + h * 0.05
+        for ln in lines:
+            centered(ln, f, y, fg)
+            y += h * 0.085
+
+    elif style == "chapter":
+        d.line([(int(w * 0.30), int(h * 0.40)), (int(w * 0.70), int(h * 0.40))], fill=accent, width=3)
+        f = font(h * 0.085)
+        lines = textwrap.wrap(text, width=14)[:2] or [" "]
+        y = int(h * 0.45)
+        for ln in lines:
+            centered(ln, f, y, fg)
+            y += h * 0.11
+        d.line([(int(w * 0.42), int(h * 0.45 + len(lines) * h * 0.11 + h * 0.02)),
+                (int(w * 0.58), int(h * 0.45 + len(lines) * h * 0.11 + h * 0.02))], fill=accent, width=3)
+
+    else:  # title — 좌측 정렬, 강조 라인
+        d.rectangle([(int(w * 0.06), int(h * 0.42)), (int(w * 0.13), int(h * 0.428))], fill=accent)
+        f = font(h * 0.082)
+        y = int(h * 0.47)
+        for ln in (textwrap.wrap(text, width=13) or [" "])[:3]:
+            d.text((int(w * 0.06), y), ln, font=f, fill=fg)
+            y += int(h * 0.105)
+
     img.save(path)
 
 

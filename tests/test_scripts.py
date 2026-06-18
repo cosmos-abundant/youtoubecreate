@@ -196,6 +196,18 @@ class TestProduceVideo(unittest.TestCase):
         self.assertLess(cues[0]["end"] - cues[0]["start"],
                         cues[1]["end"] - cues[1]["start"])  # 글자수 비례
 
+    def test_default_card_style(self):
+        self.assertEqual(produce_video._default_card_style(1, "무엇이든"), "title")
+        self.assertEqual(produce_video._default_card_style(4, "1896년 인천 감리서"), "number")
+        self.assertEqual(produce_video._default_card_style(2, "제재"), "fullscreen")
+        self.assertEqual(produce_video._default_card_style(2, "임금님의 전화 예절"), "chapter")
+        self.assertEqual(produce_video._default_card_style(3, "임금님의 전화 예절"), "title")
+
+    def test_parse_assigns_card_style(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            scenes = produce_video.parse_scenes(self._write_draft(Path(tmp)))
+            self.assertIn(scenes[0]["visual"]["card_style"], produce_video.CARD_STYLES)
+
     def test_kenburns_expr(self):
         self.assertIn("zoompan=z='1+0.10*on/240'", produce_video.kenburns_expr("zoom-in", 240))
         self.assertIn("1.10-0.10*on/240", produce_video.kenburns_expr("zoom-out", 240))
